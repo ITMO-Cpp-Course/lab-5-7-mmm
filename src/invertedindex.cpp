@@ -42,7 +42,7 @@ void InvertedIndex::remove_document(size_t doc_id)
 
 std::unordered_map<size_t, size_t> InvertedIndex::search(std::string word) const
 {
-    std::transform(word.begin(), word.end(), word.begin()[](unsigned char c) { return std::tolower(c); });
+    std::transform(word.begin(), word.end(), word.begin(), [](unsigned char c) { return std::tolower(c); });
 
     auto it = index_.find(word);
     if (it != index_.end())
@@ -54,15 +54,15 @@ std::unordered_map<size_t, size_t> InvertedIndex::search(std::string word) const
 
 size_t InvertedIndex::get_word_count(std::string word, size_t doc_id) const
 {
-    std::transform(word.begin(), word.end(), word.begin()[](unsigned char c) { return std::tolower(c); });
+    std::transform(word.begin(), word.end(), word.begin(), [](unsigned char c) { return std::tolower(c); });
 
     auto it = index_.find(word);
     if (it != index_.end())
     {
-        auto doc_id = it->second.find(doc_id);
-        if (doc_id != it->second.end())
+        auto word_it = it->second.find(work_it);
+        if (work_it != it->second.end())
         {
-            return doc_id->second;
+            return work_it->second;
         }
     }
     return 0;
