@@ -15,7 +15,7 @@ std::vector<std::string> DocumentBuilder::tokenize(const std::string& text)
         }
         else if (!current_word.empty())
         {
-            word.push_back(std::move(current_word));
+            words.push_back(std::move(current_word));
             current_word.clear();
         }
     }
