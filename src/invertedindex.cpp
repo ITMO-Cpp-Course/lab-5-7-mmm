@@ -59,7 +59,7 @@ size_t InvertedIndex::get_word_count(std::string word, size_t doc_id) const
     auto it = index_.find(word);
     if (it != index_.end())
     {
-        auto word_it = it->second.find(word_it);
+        auto word_it = it->second.find(doc_it);
         if (word_it != it->second.end())
         {
             return word_it->second;
