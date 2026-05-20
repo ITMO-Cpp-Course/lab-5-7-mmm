@@ -2,20 +2,22 @@
 #include <algorithm>
 #include <cctype>
 
-std::vector<std::string> DocumentBuilder::tokenize(const std::string& text) {
+std::vector<std::string> DocumentBuilder::tokenize(const std::string& text)
+{
     std::vector<std::string> words;
     std::string current_word;
 
     for (char ch : text)
     {
-        if(std::isalnum(static_cast<unsigned char>(ch))) {
-        current_word += std::tolower(static_cast<unsigned char>(ch));
+        if (std::isalnum(static_cast<unsigned char>(ch)))
+        {
+            current_word += std::tolower(static_cast<unsigned char>(ch));
         }
         else if (!current_word.empty())
         {
             word.push_back(std::move(current_word));
             current_word.clear();
-        }     
+        }
     }
 
     if (!current_word.empty())
@@ -25,6 +27,7 @@ std::vector<std::string> DocumentBuilder::tokenize(const std::string& text) {
     return words;
 }
 
-Document DocumentBuilder(size_t id, std::string name, std::string text) {
+Document DocumentBuilder(size_t id, std::string name, std::string text)
+{
     return Document(id, std::move(name), std::move(text));
 }

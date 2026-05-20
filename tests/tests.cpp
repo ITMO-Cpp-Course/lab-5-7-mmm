@@ -1,6 +1,6 @@
-#include <catch2/catch_all.hpp>
 #include "documentbuilder.hpp"
 #include "invertedindex.hpp"
+#include <catch2/catch_all.hpp>
 
 TEST_CASE("Adding documents and basic search", "[index][add][search]")
 {
@@ -8,13 +8,15 @@ TEST_CASE("Adding documents and basic search", "[index][add][search]")
     auto doc = DocumentBuilder::build(1, "test1.txt", "hello world");
     index.add_document(std::move(doc));
 
-    SECTION("Search for an existing word") {
+    SECTION("Search for an existing word")
+    {
         auto result = index.search("hello");
         REQUIRE(result.size() == 1);
         REQUIRE(result.count(1) == 1);
     }
 
-    SECTION("Search for a missing word") {
+    SECTION("Search for a missing word")
+    {
         auto result = index.search("sixseven");
         REQUIRE(result.empty());
     }
@@ -26,11 +28,13 @@ TEST_CASE("Accurate counting of occurrences and normalization of the register", 
     auto doc = DocumentBuilder::build(1, "test2.txt", "Cat, cat! And again cat.");
     index.add_document(std::move(doc));
 
-    SECTION("Counting words in lowercase") {
+    SECTION("Counting words in lowercase")
+    {
         REQUIRE(index.get_word_count("cat", 1) == 3);
     }
 
-    SECTION("Query for a word that is not in the document") {
+    SECTION("Query for a word that is not in the document")
+    {
         REQUIRE(index.get_word_count("puck", 1) == 0);
     }
 }
@@ -46,8 +50,8 @@ TEST_CASE("Deleting documents from the index", "[index][remove]")
 
     REQUIRE(index.search("banana").size() == 2);
 
-
-    SECTION("Complete document deletion and word clearing") {
+    SECTION("Complete document deletion and word clearing")
+    {
         index.remove_document(1);
         auto res_banana = index.search("banana");
 
