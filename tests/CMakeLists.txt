@@ -13,7 +13,8 @@ add_executable(resource_tests
 
 target_include_directories(resource_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
-target_link_libraries(resource_tests PRIVATE resource_core project_warnings Catch2::Catch2WithMain)
+target_link_libraries(resource_tests PRIVATE search_index project_warnings Catch2::Catch2WithMain)
+
 if (TARGET project_sanitizers)
         target_link_libraries(resource_tests PRIVATE project_sanitizers)
 endif ()
