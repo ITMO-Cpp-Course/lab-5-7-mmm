@@ -27,7 +27,7 @@ std::vector<std::string> DocumentBuilder::tokenize(const std::string& text)
     return words;
 }
 
-Document DocumentBuilder(size_t id, std::string name, std::string text)
+Document DocumentBuilder::build(size_t id, std::string name, std::string text)
 {
     return Document(id, std::move(name), std::move(text));
 }
