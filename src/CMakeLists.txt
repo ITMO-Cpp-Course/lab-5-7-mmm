@@ -2,12 +2,15 @@
 set(SOURCES
     documentbuilder.cpp
     invertedindex.cpp
+    indexstore.cpp
 )
 
 set(HEADERS
     document.hpp
     documentbuilder.hpp
     invertedindex.hpp
+    indexstore.hpp
+    result.hpp
 )
 
 add_library(search_index STATIC ${SOURCES} ${HEADERS})

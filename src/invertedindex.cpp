@@ -3,8 +3,13 @@
 #include <algorithm>
 #include <cctype>
 
-void InvertedIndex::add_document(Document doc)
+Result<void> InvertedIndex::add_document(Document doc)
 {
+    if (has_document(doc.id))
+    {
+        return std::unexpected(IndexError::DocumentAlreadyExists);
+    }
+
     size_t doc_id = doc.id;
     auto words = DocumentBuilder::tokenize(doc.text);
 
@@ -19,8 +24,13 @@ void InvertedIndex::add_document(Document doc)
     documents_.insert({doc_id, std::move(doc)});
 }
 
-void InvertedIndex::remove_document(size_t doc_id)
+Result<void> InvertedIndex::remove_document(size_t doc_id)
 {
+    if (!has_document(doc_id))
+    {
+        return std::unexpected(IndexError::DocumentNotFound);
+    }
+
     if (documents_.find(doc_id) == documents_.end())
         return;
 

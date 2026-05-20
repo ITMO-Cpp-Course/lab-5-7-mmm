@@ -1,4 +1,5 @@
 #include "documentbuilder.hpp"
+#include "indexstore.hpp"
 #include "invertedindex.hpp"
 #include <catch2/catch_all.hpp>
 
@@ -60,5 +61,37 @@ TEST_CASE("Deleting documents from the index", "[index][remove]")
         REQUIRE(res_banana.count(1) == 0);
 
         REQUIRE(index.search("apple").empty());
+    }
+}
+
+TEST_CASE("Checking transactions in the IndexStore", [transaction])
+{
+    IndexStore store;
+
+    SECTION("Rollback of a transaction in the absence of a commit")
+    {
+        {
+            auto tx = store.begin_update();
+            auto res = tx.add_document(DocumentBuilder::build(1, "test3.txt", "hohoho"));
+            REQUIRE(res.has_value());
+        }
+
+        auto search_res = store.search("hohoho");
+        REQUIRE(search_res.has_value());
+        REQUIRE(search_res.value().empty());
+    }
+
+    SECTION("A successful commit saves the changes.")
+    {
+        {
+            auto tx = store.begin_update();
+            tx.add_document(DocumentBuilder::build(2, "test4.txt", "zenit"));
+            tx.commit();
+        }
+
+        auto search_res = store.search("zenit");
+        REQUIRE(search_res.has_value());
+        REQUIRE(search_res.value().size() == 1);
+        REQUIRE(search_res.value().count() == 1);
     }
 }
