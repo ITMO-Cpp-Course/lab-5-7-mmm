@@ -27,7 +27,7 @@ TEST_CASE("Adding documents and basic search", "[index][add][search]")
 TEST_CASE("Accurate counting of occurrences and normalization of the register", "[index][count][token]")
 {
     InvertedIndex index;
-    auto doc = DocumentBuilder::build(1, "test2.txt", "Cat, cat! And again cat.");
+    auto doc = DocumentBuilder::build(1, "test2.txt", "Cat, cat! And agaiin cat.");
     index.add_document(std::move(doc));
 
     SECTION("Counting words in lowercase")
