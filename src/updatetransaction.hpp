@@ -1,6 +1,6 @@
 #pragma once
 
-#include "invertedindex.hpp"
+#include "indexstore.hpp"
 #include "result.hpp"
 #include <vector>
 

@@ -1,16 +1,6 @@
 #include "updatetransaction.hpp"
 #include "indexstore.hpp"
 
-UpdateTransaction::UpdateTransaction(IndexStore& store) : store_(store), backup_(store.get_index()) {}
-
-UpdateTransaction::~UpdateTransaction()
-{
-    if (!committed_)
-    {
-        store_.get_index() = backup_;
-    }
-}
-
 Result<void> UpdateTransaction::add_document(Document doc)
 {
     if (backup_.has_document(doc.id))

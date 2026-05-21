@@ -1,6 +1,7 @@
 #include "documentbuilder.hpp"
 #include "indexstore.hpp"
 #include "invertedindex.hpp"
+#include "updatetransaction.hpp"
 #include <catch2/catch_all.hpp>
 
 TEST_CASE("Adding documents and basic search", "[index][add][search]")
