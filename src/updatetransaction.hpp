@@ -6,14 +6,14 @@
 class UpdateTransaction
 {
   private:
-    InvertedStore& store_;
+    IndexStore& store_;
     InvertedIndex backup_;
     std::vector<Document> pending_adds_;
     std::vector<size_t> pending_removes_;
     bool committed_ = false;
 
   public:
-    explicit UpdateTransaction(InvertedStore& index) : store_(store), backup_(store.get_index()) {}
+    explicit UpdateTransaction(IndexStore& index) : store_(store), backup_(store.get_index()) {}
 
     ~UpdateTransaction()
     {
