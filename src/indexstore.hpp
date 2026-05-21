@@ -1,7 +1,9 @@
 #pragma once
 
 #include "invertedindex.hpp"
-#include "updatetransaction.hpp"
+#include "result.hpp"
+
+class UpdateTransaction;
 
 class IndexStore
 {

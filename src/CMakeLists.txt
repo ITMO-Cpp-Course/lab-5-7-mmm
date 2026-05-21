@@ -3,6 +3,7 @@ set(SOURCES
     documentbuilder.cpp
     invertedindex.cpp
     indexstore.cpp
+    updatetransaction.cpp
 )
 
 set(HEADERS
@@ -11,6 +12,7 @@ set(HEADERS
     invertedindex.hpp
     indexstore.hpp
     result.hpp
+    updatetransaction.hpp
 )
 
 add_library(search_index STATIC ${SOURCES} ${HEADERS})
