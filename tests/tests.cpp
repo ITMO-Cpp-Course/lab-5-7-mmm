@@ -64,7 +64,7 @@ TEST_CASE("Deleting documents from the index", "[index][remove]")
     }
 }
 
-TEST_CASE("Checking transactions in the IndexStore", [transaction])
+TEST_CASE("Checking transactions in the IndexStore")
 {
     IndexStore store;
 
@@ -92,6 +92,25 @@ TEST_CASE("Checking transactions in the IndexStore", [transaction])
         auto search_res = store.search("zenit");
         REQUIRE(search_res.has_value());
         REQUIRE(search_res.value().size() == 1);
-        REQUIRE(search_res.value().count() == 1);
+        REQUIRE(search_res.value().count(2) == 1);
+    }
+
+    SECTION("Transaction with multiple operations")
+    {
+        {
+            auto tx = store.begin_update();
+            REQUIRE(tx.add_document(DocumentBuilder::build(3, "doc3.txt", "hi girls")).has_value());
+            REQUIRE(tx.add_document(DocumentBuilder::build(4, "doc4.txt", "bye girls")).has_value());
+            tx.commit();
+        }
+
+        auto hello_res = store.search("hi");
+        REQUIRE(hello_res.has_value());
+        REQUIRE(hello_res.value().size() == 1);
+        REQUIRE(hello_res.value().count(3) == 1);
+
+        auto world_res = store.search("girls");
+        REQUIRE(world_res.has_value());
+        REQUIRE(world_res.value().size() == 2);
     }
 }

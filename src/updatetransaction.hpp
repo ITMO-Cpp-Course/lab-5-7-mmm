@@ -1,33 +1,63 @@
 #pragma once
 
-#include "invertedindex.hpp"
+#include "indexstore.hpp"
+#include <vector>
 
 class UpdateTransaction
 {
   private:
-    InvertedIndex& target_index_;
+    InvertedStore& store_;
     InvertedIndex backup_;
+    std::vector<Document> pending_adds_;
+    std::vector<size_t> pending_removes_;
     bool committed_ = false;
 
   public:
-    explicit UpdateTransaction(InvertedIndex& index) : target_index_(index), backup_(index) {}
+    explicit UpdateTransaction(InvertedStore& index) : store_(store), backup_(store.get_index()) {}
 
     ~UpdateTransaction()
     {
         if (!committed_)
         {
-            target_index_ = backup_;
+            store_.get_index() = backup_;
         }
     }
 
     Result<void> add_document(Document doc)
     {
-        auto res = target_index_.add_document(std::move(doc));
+        if (backup_.has_document(doc.id))
+        {
+            return std::unexpected(IndexError::DocumentAlreadyExists);
+        }
+        pending_adds_.push_back(std::move(doc));
         return res;
     }
 
-    void commit()
+    Result<void> remove_document(size_t doc_id)
     {
+        if (!backup_.has_document(doc_id))
+        {
+            return std::unexpected(IndexError::DocumentNotFound);
+        }
+        pending_removes_.push_back(doc_id);
+        return {};
+    }
+
+    Result<void> commit()
+    {
+        for (auto& doc : pending_adds_)
+        {
+            auto res = store_.get_index().add_document(std::move(doc));
+            if (!res)
+                return res;
+        }
+        for (auto doc_id : pending_removes_)
+        {
+            auto res = store_.get_index().remove_document(doc_id);
+            if (!res)
+                return res;
+        }
         committed_ = true;
+        return {};
     }
 };

@@ -31,9 +31,6 @@ Result<void> InvertedIndex::remove_document(size_t doc_id)
         return std::unexpected(IndexError::DocumentNotFound);
     }
 
-    if (documents_.find(doc_id) == documents_.end())
-        return;
-
     if (doc_to_words_.find(doc_id) != doc_to_words_.end())
     {
         for (const auto& word : doc_to_words_[doc_id])
@@ -48,6 +45,7 @@ Result<void> InvertedIndex::remove_document(size_t doc_id)
         doc_to_words_.erase(doc_id);
     }
     documents_.erase(doc_id);
+    return {};
 }
 
 std::unordered_map<size_t, size_t> InvertedIndex::search(std::string word) const
