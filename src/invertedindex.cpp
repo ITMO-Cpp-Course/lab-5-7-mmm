@@ -22,7 +22,7 @@ Result<void> InvertedIndex::add_document(Document doc)
         index_[word][doc_id]++;
     }
     documents_.insert({doc_id, std::move(doc)});
-    return Result<void>::success(); 
+    return Result<void>::success();
 }
 
 Result<void> InvertedIndex::remove_document(size_t doc_id)
