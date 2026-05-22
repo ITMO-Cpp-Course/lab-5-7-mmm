@@ -3,7 +3,6 @@ set(SOURCES
     documentbuilder.cpp
     invertedindex.cpp
     indexstore.cpp
-    updatetransaction.cpp
 )
 
 set(HEADERS
