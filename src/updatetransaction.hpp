@@ -18,9 +18,9 @@ class UpdateTransaction
   public:
     explicit UpdateTransaction(IndexStore& index);
 
-    ~UpdateTransaction()
+    ~UpdateTransaction();
 
-    Result<void> add_document(Document doc)
-    Result<void> remove_document(size_t doc_id)
-    Result<void> commit()
+    Result<void> add_document(Document doc);
+    Result<void> remove_document(size_t doc_id);
+    Result<void> commit();
 };
