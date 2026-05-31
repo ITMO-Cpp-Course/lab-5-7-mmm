@@ -1,7 +1,184 @@
+#include "documentbuilder.hpp"
+#include "indexstore.hpp"
+#include "invertedindex.hpp"
+#include "updatetransaction.hpp"
 #include <catch2/catch_all.hpp>
 
-// TODO: Your code
-TEST_CASE("Test case name", "[some_tag]")
+TEST_CASE("Adding documents and basic search", "[index][add][search]")
 {
-    REQUIRE(false);
+    InvertedIndex index;
+    auto doc = DocumentBuilder::build(1, "test1.txt", "hello world");
+    index.add_document(std::move(doc));
+
+    SECTION("Search for an existing word")
+    {
+        auto result = index.search("hello");
+        REQUIRE(result.size() == 1);
+        REQUIRE(result.count(1) == 1);
+    }
+
+    SECTION("Search for a missing word")
+    {
+        auto result = index.search("sixseven");
+        REQUIRE(result.empty());
+    }
+}
+
+TEST_CASE("Accurate counting of occurrences and normalization of the register", "[index][count][token]")
+{
+    InvertedIndex index;
+    auto doc = DocumentBuilder::build(1, "test2.txt", "Cat, cat! And agaiin cat.");
+    index.add_document(std::move(doc));
+
+    SECTION("Counting words in lowercase")
+    {
+        REQUIRE(index.get_word_count("cat", 1) == 3);
+    }
+
+    SECTION("Query for a word that is not in the document")
+    {
+        REQUIRE(index.get_word_count("puck", 1) == 0);
+    }
+}
+
+TEST_CASE("Deleting documents from the index", "[index][remove]")
+{
+    InvertedIndex index;
+    auto doc1 = DocumentBuilder::build(1, "doc1.txt", "apple banana");
+    auto doc2 = DocumentBuilder::build(2, "doc2.txt", "banana orange");
+
+    index.add_document(std::move(doc1));
+    index.add_document(std::move(doc2));
+
+    REQUIRE(index.search("banana").size() == 2);
+
+    SECTION("Complete document deletion and word clearing")
+    {
+        index.remove_document(1);
+        auto res_banana = index.search("banana");
+
+        REQUIRE(res_banana.size() == 1);
+        REQUIRE(res_banana.count(2) == 1);
+        REQUIRE(res_banana.count(1) == 0);
+
+        REQUIRE(index.search("apple").empty());
+    }
+}
+
+TEST_CASE("Checking transactions in the IndexStore")
+{
+    IndexStore store;
+
+    SECTION("Rollback of a transaction in the absence of a commit")
+    {
+        {
+            auto tx_result = store.begin_update();
+            REQUIRE(tx_result.has_value());
+            auto tx = std::move(tx_result.value());
+            auto res = tx.add_document(DocumentBuilder::build(1, "test3.txt", "hohoho"));
+            REQUIRE(res.has_value());
+        }
+
+        auto search_res = store.search("hohoho");
+        REQUIRE(search_res.has_value());
+        REQUIRE(search_res.value().empty());
+    }
+
+    SECTION("A successful commit saves the changes.")
+    {
+        {
+            auto tx_result = store.begin_update();
+            REQUIRE(tx_result.has_value());
+            auto tx = std::move(tx_result.value());
+            REQUIRE(tx.add_document(DocumentBuilder::build(2, "test4.txt", "zenit")).has_value());
+            REQUIRE(tx.commit().has_value());
+        }
+
+        auto search_res = store.search("zenit");
+        REQUIRE(search_res.has_value());
+        REQUIRE(search_res.value().size() == 1);
+        REQUIRE(search_res.value().count(2) == 1);
+    }
+
+    SECTION("Transaction with multiple operations")
+    {
+        {
+            auto tx_result = store.begin_update();
+            REQUIRE(tx_result.has_value());
+            auto tx = std::move(tx_result.value());
+            REQUIRE(tx.add_document(DocumentBuilder::build(3, "doc3.txt", "hi girls")).has_value());
+            REQUIRE(tx.add_document(DocumentBuilder::build(4, "doc4.txt", "bye girls")).has_value());
+            REQUIRE(tx.commit().has_value());
+        }
+
+        auto hello_res = store.search("hi");
+        REQUIRE(hello_res.has_value());
+        REQUIRE(hello_res.value().size() == 1);
+        REQUIRE(hello_res.value().count(3) == 1);
+
+        auto world_res = store.search("girls");
+        REQUIRE(world_res.has_value());
+        REQUIRE(world_res.value().size() == 2);
+    }
+}
+
+TEST_CASE("Transaction invariants and error handling", "[index][transaction][errors]")
+{
+    IndexStore store;
+
+    SECTION("Store invariant when commit fails - document already exists")
+    {
+        store.add_document(DocumentBuilder::build(1, "doc1.txt", "content"));
+
+        auto tx_result = store.begin_update();
+        REQUIRE(tx_result.has_value());
+        auto tx = std::move(tx_result.value());
+
+        auto res = tx.add_document(DocumentBuilder::build(1, "doc2.txt", "other"));
+        REQUIRE(!res.has_value());
+        REQUIRE(res.error() == IndexError::DocumentAlreadyExists);
+
+        REQUIRE(tx.commit().has_value());
+
+        auto search = store.search("other");
+        REQUIRE(search.value().empty());
+    }
+
+    SECTION("Operation after commit should fail")
+    {
+        auto tx_result = store.begin_update();
+        REQUIRE(tx_result.has_value());
+        auto tx = std::move(tx_result.value());
+
+        tx.add_document(DocumentBuilder::build(2, "doc.txt", "hello"));
+        REQUIRE(tx.commit().has_value());
+
+        auto res = tx.add_document(DocumentBuilder::build(3, "doc2.txt", "world"));
+        REQUIRE(!res.has_value());
+        REQUIRE(res.error() == IndexError::TransactionAlreadyFinished);
+    }
+
+    SECTION("Double commit should fail")
+    {
+        auto tx_result = store.begin_update();
+        REQUIRE(tx_result.has_value());
+        auto tx = std::move(tx_result.value());
+
+        tx.add_document(DocumentBuilder::build(4, "doc.txt", "hello"));
+        REQUIRE(tx.commit().has_value());
+
+        auto second_commit = tx.commit();
+        REQUIRE(!second_commit.has_value());
+        REQUIRE(second_commit.error() == IndexError::TransactionAlreadyFinished);
+    }
+
+    SECTION("Two active transactions should not be allowed")
+    {
+        auto tx1_result = store.begin_update();
+        REQUIRE(tx1_result.has_value());
+
+        auto tx2_result = store.begin_update();
+        REQUIRE(!tx2_result.has_value());
+        REQUIRE(tx2_result.error() == IndexError::TransactionAlreadyActive);
+    }
 }
