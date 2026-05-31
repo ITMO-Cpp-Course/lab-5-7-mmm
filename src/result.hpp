@@ -7,8 +7,8 @@ enum class IndexError // это перечесления, поэтому не о
     DocumentAlreadyExists,
     DocumentNotFound,
     TransactionFailed,
-    TransactionAlreadyActive,  // попытка начать транзакцию, когда уже есть активная
-    TransactionAlreadyFinished // попытка использовать уже завершённую транзакцию
+    TransactionAlreadyActive,
+    TransactionAlreadyFinished
 };
 
 template <typename T>
