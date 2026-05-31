@@ -3,5 +3,5 @@
 
 UpdateTransaction IndexStore::begin_update()
 {
-    return UpdateTransaction(*this); //вернет объект транзакции 
+    return UpdateTransaction(*this); // вернет объект транзакции
 }

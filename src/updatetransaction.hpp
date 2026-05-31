@@ -10,10 +10,10 @@ class UpdateTransaction
 {
   private:
     IndexStore& store_;
-    InvertedIndex backup_; //резервная копия исходного состояния
-    std::vector<Document> pending_adds_; //документ на добавление 
-    std::vector<size_t> pending_removes_; //ID документов на удаление
-    bool committed_ = false; //применены ли изменения
+    InvertedIndex backup_;                // резервная копия исходного состояния
+    std::vector<Document> pending_adds_;  // документ на добавление
+    std::vector<size_t> pending_removes_; // ID документов на удаление
+    bool committed_ = false;              // применены ли изменения
 
   public:
     explicit UpdateTransaction(IndexStore& index);
