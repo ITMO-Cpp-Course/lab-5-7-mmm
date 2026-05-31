@@ -115,3 +115,59 @@ TEST_CASE("Checking transactions in the IndexStore")
         REQUIRE(world_res.value().size() == 2);
     }
 }
+
+TEST_CASE("Transaction invariants and error handling", "[index][transaction][errors]")
+{
+    IndexStore store;
+
+    SECTION("Store invariant when commit fails - document already exists")
+    {
+        store.add_document(DocumentBuilder::build(1, "doc1.txt", "content"));
+
+        auto tx = store.begin_update().value();
+        auto res = tx.add_document(DocumentBuilder::build(1, "doc2.txt", "other"));
+        REQUIRE(!res.has_value());
+        REQUIRE(res.error() == IndexError::DocumentAlreadyExists);
+
+        tx.commit();
+
+        auto search = store.search("other");
+
+        REQUIRE(search.value().empty());
+    }
+
+    SECTION("Operation after commit should fail")
+    {
+        auto tx = store.begin_update().value();
+        tx.add_document(DocumentBuilder::build(2, "doc.txt", "hello"));
+        tx.commit();
+
+        auto res = tx.add_document(DocumentBuilder::build(3, "doc2.txt", "world"));
+
+        REQUIRE(!res.has_value());
+        REQUIRE(res.error() == IndexError::TransactionAlreadyFinished);
+    }
+
+    SECTION("Double commit should fail")
+    {
+        auto tx = store.begin_update().value();
+
+        tx.add_document(DocumentBuilder::build(4, "doc.txt", "hello"));
+
+        REQUIRE(tx.commit().has_value());
+
+        auto second_commit = tx.commit();
+
+        REQUIRE(!second_commit.has_value());
+        REQUIRE(second_commit.error() == IndexError::TransactionAlreadyFinished);
+    }
+
+    SECTION("Two active transactions should not be allowed")
+    {
+        auto tx1 = store.begin_update().value();
+        auto tx2 = store.begin_update();
+
+        REQUIRE(!tx2.has_value());
+        REQUIRE(tx2.error() == IndexError::TransactionAlreadyActive);
+    }
+}

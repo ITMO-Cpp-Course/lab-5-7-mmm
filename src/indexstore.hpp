@@ -9,16 +9,25 @@ class IndexStore
 {
   private:
     InvertedIndex index_;
+    bool has_active_transaction_ = false;
 
   public:
-    UpdateTransaction begin_update();
+    Result<UpdateTransaction> begin_update();
     Result<void> add_document(Document doc)
     {
+        if (has_active_transaction_)
+        {
+            return std::unexpected(IndexError::TransactionAlreadyActive);
+        }
         return index_.add_document(std::move(doc));
     }
 
     Result<void> remove_document(size_t doc_id)
     {
+        if (has_active_transaction_)
+        {
+            return std::unexpected(IndexError::TransactionAlreadyActive);
+        }
         return index_.remove_document(doc_id);
     }
 
@@ -40,4 +49,18 @@ class IndexStore
     {
         return index_;
     }
+
+    // Даём доступ только транзакции
+  private:
+    InvertedIndex& get_index_unsafe()
+    {
+        return index_;
+    }
+    const InvertedIndex& get_index_unsafe() const
+    {
+        return index_;
+    }
+
+    // Дружественный класс для доступа к флагу
+    friend class UpdateTransaction;
 };
