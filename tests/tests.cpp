@@ -72,7 +72,9 @@ TEST_CASE("Checking transactions in the IndexStore")
     SECTION("Rollback of a transaction in the absence of a commit")
     {
         {
-            auto tx = store.begin_update();
+            auto tx_result = store.begin_update();
+            REQUIRE(tx_result.has_value());
+            auto tx = std::move(tx_result.value());
             auto res = tx.add_document(DocumentBuilder::build(1, "test3.txt", "hohoho"));
             REQUIRE(res.has_value());
         }
@@ -85,9 +87,11 @@ TEST_CASE("Checking transactions in the IndexStore")
     SECTION("A successful commit saves the changes.")
     {
         {
-            auto tx = store.begin_update();
-            tx.add_document(DocumentBuilder::build(2, "test4.txt", "zenit"));
-            tx.commit();
+            auto tx_result = store.begin_update();
+            REQUIRE(tx_result.has_value());
+            auto tx = std::move(tx_result.value());
+            REQUIRE(tx.add_document(DocumentBuilder::build(2, "test4.txt", "zenit")).has_value());
+            REQUIRE(tx.commit().has_value());
         }
 
         auto search_res = store.search("zenit");
@@ -99,10 +103,12 @@ TEST_CASE("Checking transactions in the IndexStore")
     SECTION("Transaction with multiple operations")
     {
         {
-            auto tx = store.begin_update();
+            auto tx_result = store.begin_update();
+            REQUIRE(tx_result.has_value());
+            auto tx = std::move(tx_result.value());
             REQUIRE(tx.add_document(DocumentBuilder::build(3, "doc3.txt", "hi girls")).has_value());
             REQUIRE(tx.add_document(DocumentBuilder::build(4, "doc4.txt", "bye girls")).has_value());
-            tx.commit();
+            REQUIRE(tx.commit().has_value());
         }
 
         auto hello_res = store.search("hi");
@@ -124,50 +130,55 @@ TEST_CASE("Transaction invariants and error handling", "[index][transaction][err
     {
         store.add_document(DocumentBuilder::build(1, "doc1.txt", "content"));
 
-        auto tx = store.begin_update().value();
+        auto tx_result = store.begin_update();
+        REQUIRE(tx_result.has_value());
+        auto tx = std::move(tx_result.value());
+
         auto res = tx.add_document(DocumentBuilder::build(1, "doc2.txt", "other"));
         REQUIRE(!res.has_value());
         REQUIRE(res.error() == IndexError::DocumentAlreadyExists);
 
-        tx.commit();
+        REQUIRE(tx.commit().has_value());
 
         auto search = store.search("other");
-
         REQUIRE(search.value().empty());
     }
 
     SECTION("Operation after commit should fail")
     {
-        auto tx = store.begin_update().value();
+        auto tx_result = store.begin_update();
+        REQUIRE(tx_result.has_value());
+        auto tx = std::move(tx_result.value());
+
         tx.add_document(DocumentBuilder::build(2, "doc.txt", "hello"));
-        tx.commit();
+        REQUIRE(tx.commit().has_value());
 
         auto res = tx.add_document(DocumentBuilder::build(3, "doc2.txt", "world"));
-
         REQUIRE(!res.has_value());
         REQUIRE(res.error() == IndexError::TransactionAlreadyFinished);
     }
 
     SECTION("Double commit should fail")
     {
-        auto tx = store.begin_update().value();
+        auto tx_result = store.begin_update();
+        REQUIRE(tx_result.has_value());
+        auto tx = std::move(tx_result.value());
 
         tx.add_document(DocumentBuilder::build(4, "doc.txt", "hello"));
-
         REQUIRE(tx.commit().has_value());
 
         auto second_commit = tx.commit();
-
         REQUIRE(!second_commit.has_value());
         REQUIRE(second_commit.error() == IndexError::TransactionAlreadyFinished);
     }
 
     SECTION("Two active transactions should not be allowed")
     {
-        auto tx1 = store.begin_update().value();
-        auto tx2 = store.begin_update();
+        auto tx1_result = store.begin_update();
+        REQUIRE(tx1_result.has_value());
 
-        REQUIRE(!tx2.has_value());
-        REQUIRE(tx2.error() == IndexError::TransactionAlreadyActive);
+        auto tx2_result = store.begin_update();
+        REQUIRE(!tx2_result.has_value());
+        REQUIRE(tx2_result.error() == IndexError::TransactionAlreadyActive);
     }
 }

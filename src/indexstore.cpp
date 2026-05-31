@@ -1,7 +1,7 @@
 #include "indexstore.hpp"
 #include "updatetransaction.hpp"
 
-UpdateTransaction IndexStore::begin_update()
+Result<UpdateTransaction> IndexStore::begin_update()
 {
     if (has_active_transaction_)
     {
