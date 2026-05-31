@@ -1,7 +1,7 @@
 #include "updatetransaction.hpp"
 #include "indexstore.hpp"
 
-UpdateTransaction(IndexStore& index) : store_(index), working_copy_(index.get_index()) {}
+UpdateTransaction::UpdateTransaction(IndexStore& index) : store_(index), working_copy_(index.get_index()) {}
 
 UpdateTransaction::UpdateTransaction(UpdateTransaction&& other) noexcept
     : store_(other.store_), working_copy_(std::move(other.working_copy_)),
@@ -32,14 +32,14 @@ UpdateTransaction& UpdateTransaction::operator=(UpdateTransaction&& other) noexc
 
 UpdateTransaction::~UpdateTransaction()
 {
-    if (!committed_)
+    if (!finished_)
     {
         // откатываем если не завершена явно
         rollback();
     }
 }
 
-Result<void>::UpdateTransaction add_document(Document doc)
+Result<void> UpdateTransaction::add_document(Document doc)
 {
     if (finished_)
     {
@@ -59,7 +59,7 @@ Result<void>::UpdateTransaction add_document(Document doc)
     return res;
 }
 
-Result<void>::UpdateTransaction remove_document(size_t doc_id)
+Result<void> UpdateTransaction::remove_document(size_t doc_id)
 {
     if (finished_)
     {
@@ -79,7 +79,7 @@ Result<void>::UpdateTransaction remove_document(size_t doc_id)
     return res;
 }
 
-Result<void>::UpdateTransaction commit()
+Result<void> UpdateTransaction::commit()
 {
     if (finished_)
     {
