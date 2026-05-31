@@ -8,7 +8,7 @@ UpdateTransaction::UpdateTransaction(UpdateTransaction&& other) noexcept
       pending_adds_(std::move(other.pending_adds_)), pending_removes_(std::move(other.pending_removes_)),
       finished_(other.finished_)
 {
-    other.finished_ = true; // перемещенная транзакция = завершенная
+    other.finished_ = true;
 }
 
 UpdateTransaction& UpdateTransaction::operator=(UpdateTransaction&& other) noexcept
@@ -17,7 +17,7 @@ UpdateTransaction& UpdateTransaction::operator=(UpdateTransaction&& other) noexc
     {
         if (!finished_)
         {
-            rollback(); // откатываем текущую транзакцию
+            rollback();
         }
 
         store_ = other.store_;
@@ -34,7 +34,6 @@ UpdateTransaction::~UpdateTransaction()
 {
     if (!finished_)
     {
-        // откатываем если не завершена явно
         rollback();
     }
 }
@@ -50,7 +49,7 @@ Result<void> UpdateTransaction::add_document(Document doc)
     {
         return std::unexpected(IndexError::DocumentAlreadyExists);
     }
-    // Работаем с рабочей копией
+
     auto res = working_copy_.add_document(doc);
     if (res)
     {
@@ -70,7 +69,7 @@ Result<void> UpdateTransaction::remove_document(size_t doc_id)
     {
         return std::unexpected(IndexError::DocumentNotFound);
     }
-    // Работаем с рабочей копией
+
     auto res = working_copy_.remove_document(doc_id);
     if (res)
     {
@@ -86,33 +85,34 @@ Result<void> UpdateTransaction::commit()
         return std::unexpected(IndexError::TransactionAlreadyFinished);
     }
 
-    // Все операции уже применены к working_copy_
-    // Просто подменяем индекс в store_
+    if (pending_adds_.empty() && pending_removes_.empty())
+    {
+        finished_ = true;
+        store_.has_active_transaction_ = false;
+        return {};
+    }
+
     store_.get_index() = std::move(working_copy_);
 
     finished_ = true;
-    successful_ = true;
+    store_.has_active_transaction_ = false;
 
-    // Очищаем векторы
     pending_adds_.clear();
     pending_removes_.clear();
 
     return {};
 }
 
-void rollback()
+void UpdateTransaction::rollback()
 {
     if (finished_)
     {
-        return; // завершена
+        return;
     }
 
-    // Отказываемся от working_copy_
     finished_ = true;
-    successful_ = false;
+    store_.has_active_transaction_ = false;
 
-    // Очищаем векторы
     pending_adds_.clear();
     pending_removes_.clear();
-    // working_copy_ просто удалится
 }
